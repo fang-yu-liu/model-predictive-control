@@ -93,7 +93,7 @@ int main() {
           double v = j[1]["speed"];
 
           /*
-          * alculate steering angle and throttle using MPC.
+          * Calculate steering angle and throttle using MPC.
           *
           * Both are in between [-1, 1].
           *
