@@ -5,10 +5,6 @@ This project is part of the [Udacity Self-Driving Car Nanodegree](https://www.u
 
 ---
 
-[//]: # (Image References)
-
-[image1]: ./write-up-data/model_update_equations.png "Model Update Equations"
-
 ## Objective
 
 This project uses a Model Predictive Control (MPC) to drive the vehicle in a simulator. A set of reference waypoints is provided by the simulator, and we use MPC to compute the optimal trajectory with associated steering angle and throttle commands to minimize the error between the calculated trajectory and the third-order polynomial fitted from the given waypoints.
@@ -18,7 +14,7 @@ This project uses a Model Predictive Control (MPC) to drive the vehicle in a sim
 * State - vehicle's x and y coordinates, orientation angle (psi), velocity (v), cross track error (cte) and orientation error (epsi).
 * Actuators - steering angle (delta) and throttle (a).
 
-![Update Equations][image1]
+<img src="write-up-data/model_update_equations.png" width="50%" alt="Update Equations"/>
 
 #### Timestep Length and Elapsed Duration (N & dt)
 The prediction horizon (T) is the duration over which future predictions are made. T is the product of two other variables, T = N * dt.
