@@ -5,8 +5,8 @@
 
 using CppAD::AD;
 
-// TODO: Set the timestep length and duration
-size_t N = 20;
+// Set the timestep length and duration
+size_t N = 10;
 double dt = 0.1;
 
 // This value assumes the model presented in the classroom is used.
@@ -21,7 +21,7 @@ double dt = 0.1;
 // This is the length from front to CoG that has a similar radius.
 const double Lf = 2.67;
 
-double ref_v = 15;
+double ref_v = 40;
 
 size_t x_start = 0;
 size_t y_start = x_start + N;
@@ -40,31 +40,31 @@ class FG_eval {
 
   typedef CPPAD_TESTVECTOR(AD<double>) ADvector;
   void operator()(ADvector& fg, const ADvector& vars) {
-    // TODO: implement MPC
-    // `fg` a vector of the cost constraints, `vars` is a vector of variable values (state & actuators)
-    // NOTE: You'll probably go back and forth between this function and
-    // the Solver function below.
+    // MPC Implementation
+    // `fg` - a vector of the cost constraints
+    // `vars` - a vector of variable values (state & actuators)
     fg[0] = 0;
 
-    //Cost based on reference state
+    // Cost based on reference state
     for (int t = 0; t < N; t++) {
-      fg[0] += CppAD::pow(vars[cte_start + t], 2);
-      fg[0] += CppAD::pow(vars[epsi_start + t], 2);
+      fg[0] += 1000*CppAD::pow(vars[cte_start + t], 2);
+      fg[0] += 1000*CppAD::pow(vars[epsi_start + t], 2);
       fg[0] += CppAD::pow(vars[v_start + t] - ref_v, 2);
     }
 
-    //Minimize the cost of actuators
+    // Minimize the cost of actuators
     for (int t = 0; t < N - 1; t++) {
       fg[0] += CppAD::pow(vars[delta_start + t], 2);
       fg[0] += CppAD::pow(vars[a_start + t], 2);
     }
 
+    // Minimize the value gap between sequential actuations.
     for (int t = 0; t < N - 2; t++) {
-      fg[0] += CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
-      fg[0] += CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);
+      fg[0] += 500*CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
+      fg[0] += 500*CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);
     }
 
-    //Setup constraints
+    // Setup constraints
     fg[1 + x_start] = vars[x_start];
     fg[1 + y_start] = vars[y_start];
     fg[1 + psi_start] = vars[psi_start];
@@ -96,6 +96,11 @@ class FG_eval {
 
       AD<double> delta0 = vars[delta_start + t -1];
       AD<double> a0 = vars[a_start + t - 1];
+      if (t > 1) {
+        // Account for latency, use the delta and a from previous step
+        delta0 = vars[delta_start + t -2];
+        a0 = vars[a_start + t -1];
+      }
 
       AD<double> x1 = vars[x_start + t];
       AD<double> y1 = vars[y_start + t];
@@ -129,13 +134,13 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   // size_t i;
   typedef CPPAD_TESTVECTOR(double) Dvector;
 
-  // TODO: Set the number of model variables (includes both states and inputs).
+  // Set the number of model variables (includes both states and inputs).
   // For example: If the state is a 4 element vector, the actuators is a 2
   // element vector and there are 10 timesteps. The number of variables is:
   //
   // 4 * 10 + 2 * 9
   size_t n_vars = N * 6 + (N-1) * 2;
-  // TODO: Set the number of constraints
+  // Set the number of constraints
   size_t n_constraints = N * 6;
 
   // Initial value of the independent variables.
@@ -242,14 +247,11 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   auto cost = solution.obj_value;
   std::cout << "Cost " << cost << std::endl;
 
-  // TODO: Return the first actuator values. The variables can be accessed with
-  // `solution.x[i]`.
-  //
-  // {...} is shorthand for creating a vector, so auto x1 = {1.0,2.0}
-  // creates a 2 element double vector.
   vector<double> result;
+  // Return the first actuator values.
   result.push_back(solution.x[delta_start]);
   result.push_back(solution.x[a_start]);
+  // Return the optimal x, y tranjectory
   for (int i = 0; i < N; i++) {
     result.push_back(solution.x[x_start + i]);
     result.push_back(solution.x[y_start + i]);
